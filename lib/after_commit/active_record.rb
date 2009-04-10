@@ -1,8 +1,7 @@
 module AfterCommit
   module ActiveRecord
     # Based on the code found in Thinking Sphinx:
-    # http://ts.freelancing-gods.com/ which was based on code written by Eli
-    # Miller:
+    # http://ts.freelancing-gods.com/ which was based on code written by Eli Miller:
     # http://elimiller.blogspot.com/2007/06/proper-cache-expiry-with-aftercommit.html
     # with slight modification from Joost Hietbrink. And now me! Whew.
     def self.included(base)
@@ -13,7 +12,8 @@ module AfterCommit
           define_callbacks  :after_commit,
                             :after_commit_on_create,
                             :after_commit_on_update,
-                            :after_commit_on_destroy
+                            :after_commit_on_destroy,
+                            :after_rollback
         else
           class << self
             # Handle after_commit callbacks - call all the registered callbacks.
@@ -35,6 +35,11 @@ module AfterCommit
             def after_commit_on_destroy(*callbacks, &block)
               callbacks << block if block_given?
               write_inheritable_array(:after_commit_on_destroy, callbacks)
+            end
+
+            def after_rollback(*callbacks, &block)
+              callbacks << block if block_given?
+              write_inheritable_array(:after_commit, callbacks)
             end
           end
         end
@@ -61,25 +66,6 @@ module AfterCommit
         def add_committed_record_on_destroy
           AfterCommit.committed_records << self
           AfterCommit.committed_records_on_destroy << self
-        end
-
-        # Wraps a call to the private callback method so that the the
-        # after_commit callback can be made from the ConnectionAdapters when
-        # the commit for the transaction has finally succeeded. 
-        def after_commit_callback
-          callback(:after_commit)
-        end
-        
-        def after_commit_on_create_callback
-          callback(:after_commit_on_create)
-        end
-        
-        def after_commit_on_update_callback
-          callback(:after_commit_on_update)
-        end
-        
-        def after_commit_on_destroy_callback
-          callback(:after_commit_on_destroy)
         end
       end
     end
