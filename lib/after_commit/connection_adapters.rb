@@ -8,6 +8,10 @@ module AfterCommit
         # or destroyed within this transaction now get their after_commit
         # callback fired.
         def commit_db_transaction_with_callback          
+          trigger_before_commit_callbacks
+          trigger_before_commit_on_create_callbacks
+          trigger_before_commit_on_update_callbacks
+          trigger_before_commit_on_destroy_callbacks
           commit_db_transaction_without_callback
           trigger_after_commit_callbacks
           trigger_after_commit_on_create_callbacks
@@ -30,6 +34,38 @@ module AfterCommit
         alias_method_chain :rollback_db_transaction, :callback
         
         protected
+          def trigger_before_commit_callbacks
+            if AfterCommit.committed_records.any?
+              AfterCommit.committed_records.each do |record|
+                record.send(:callback, :before_commit)
+              end 
+            end 
+          end
+
+          def trigger_before_commit_on_create_callbacks
+            if AfterCommit.committed_records_on_create.any?
+              AfterCommit.committed_records_on_create.each do |record|
+                record.send(:callback, :before_commit_on_create)
+              end 
+            end 
+          end
+        
+          def trigger_before_commit_on_update_callbacks
+            if AfterCommit.committed_records_on_update.any?
+              AfterCommit.committed_records_on_update.each do |record|
+                record.send(:callback, :before_commit_on_update)
+              end 
+            end 
+          end
+        
+          def trigger_before_commit_on_destroy_callbacks
+            if AfterCommit.committed_records_on_destroy.any?
+              AfterCommit.committed_records_on_destroy.each do |record|
+                record.send(:callback, :before_commit_on_destroy)
+              end 
+            end 
+          end
+
           def trigger_after_commit_callbacks
             # Trigger the after_commit callback for each of the committed
             # records.
