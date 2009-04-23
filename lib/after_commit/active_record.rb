@@ -17,7 +17,8 @@ module AfterCommit
                             :before_commit,
                             :before_commit_on_create,
                             :before_commit_on_update,
-                            :before_commit_on_destroy
+                            :before_commit_on_destroy,
+                            :before_rollback
         else
           class << self
             # Handle after_commit callbacks - call all the registered callbacks.
@@ -64,6 +65,11 @@ module AfterCommit
             def before_commit_on_destroy(*callbacks, &block)
               callbacks << block if block_given?
               write_inheritable_array(:before_commit_on_destroy, callbacks)
+            end
+
+            def before_rollback(*callbacks, &block)
+              callbacks << block if block_given?
+              write_inheritable_array(:before_commit, callbacks)
             end
           end
         end

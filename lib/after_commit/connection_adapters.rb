@@ -24,6 +24,7 @@ module AfterCommit
         # should recieve the after_commit callback, but do fire the after_rollback
         # callback for each record that failed to be committed.
         def rollback_db_transaction_with_callback
+          trigger_before_rollback_callbacks
           rollback_db_transaction_without_callback
 
           trigger_after_rollback_callbacks
@@ -62,6 +63,17 @@ module AfterCommit
             if AfterCommit.committed_records_on_destroy.any?
               AfterCommit.committed_records_on_destroy.each do |record|
                 record.send(:callback, :before_commit_on_destroy)
+              end 
+            end 
+          end
+
+          def trigger_before_rollback_callbacks
+            if AfterCommit.committed_records.any?
+              AfterCommit.committed_records.each do |record|
+                begin
+                  record.send(:callback, :before_rollback)
+                rescue
+                end
               end 
             end 
           end
